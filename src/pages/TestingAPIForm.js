@@ -58,13 +58,14 @@ const TestingAPIForm = () => {
     // Send format data to the backend API endpoint
     axios.post('http://localhost:3001/api/generate-pdf', {
       education,
+      format
     })
       .then((response) => {
         // Handle the response from the backend
         console.log(response.data);
   
         // Trigger the download based on the response
-        window.open(response.data.downloadLink);
+        window.location.href = response.data.downloadLink;
       })
       .catch((error) => {
         // Handle errors

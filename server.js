@@ -116,21 +116,21 @@ const port = 3001;
 const mongoURL = 'mongodb+srv://navodhya2011:Ru1rWzPdpjZSSKEd@cluster0.qjkyxuq.mongodb.net/mern';
 
 mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => {
+.then(() => {
     console.log('Connected to MongoDB');
 
     // Define the schema for the form data
-    const formSchema = new mongoose.Schema({
-      profession: String,
-      country: String,
-      firstName: String,
-      lastName: String,
-      email: String,
-      NIC: String,
-      phoneNo: String,
-      address: String,
-      gender: String,
-      education: String
+const formSchema = new mongoose.Schema({
+    profession: String,
+    country: String,
+    firstName: String,
+    lastName: String,
+    email: String,
+    NIC: String,
+    phoneNo: String,
+    address: String,
+    gender: String,
+    education: String
     });
 
     // Create the Form model based on the schema
@@ -142,27 +142,29 @@ mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
 
     // API endpoint to submit the form data
     app.post('/api/submit-form', (req, res) => {
-      const formData = req.body;
+    const formData = req.body;
 
       // Create a new instance of the Form model
-      const form = new Form(formData);
+    const form = new Form(formData);
 
       // Save the form data to MongoDB
-      form.save()
-        .then(() => {
-          console.log('Form data saved successfully');
-          res.json({ success: true });
-        })
-        .catch((err) => {
-          console.error('Error saving form data:', err);
-          res.status(500).json({ error: 'An error occurred while saving the form data' });
+    form.save()
+    .then(() => {
+        console.log('Form data saved successfully');
+        res.json({ success: true });
+    })
+    .catch((err) => {
+        console.error('Error saving form data:', err);
+        res.status(500).json({ error: 'An error occurred while saving the form data' });
         });
     });
 
     // API endpoint to generate and return a download link
     app.post('/api/generate-pdf', (req, res) => {
-        const { education } = req.body;
-      
+        const { education, format } = req.body;
+
+        let downloadLink;
+      if (format === 'PDF') {
         // Generate the PDF using the provided education data
         generatePDF(education)
           .then((pdfBytes) => {
@@ -178,7 +180,7 @@ mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
                 console.log('PDF file created:', fileName);
       
                 // Send the download link back to the frontend
-                const downloadLink = `http://localhost:3001/api/download-pdf?fileName=${fileName}`;
+                const downloadLink = `http://localhost:3001/api/download.pdf?fileName=${fileName}`;
                 res.json({ downloadLink });
               }
             });
@@ -187,6 +189,37 @@ mongoose.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true })
             console.error('Error generating PDF:', err);
             res.status(500).json({ error: 'An error occurred while generating the PDF.' });
           });
+        }
+        else if (format === 'Word'){
+            generatePDF(education)
+          .then((pdfBytes) => {
+            const fileName = 'document.docx';
+            const filePath = path.join(__dirname, fileName);
+      
+            // Write the PDF bytes to a file
+            fs.writeFile(filePath, pdfBytes, (err) => {
+              if (err) {
+                console.error('Error writing Word file:', err);
+                res.status(500).json({ error: 'An error occurred while generating the Word.' });
+              } else {
+                console.log('Word file created:', fileName);
+      
+                // Send the download link back to the frontend
+                const downloadLink = `http://localhost:3001/api/download.docx?fileName=${fileName}`;
+                res.json({ downloadLink });
+              }
+            });
+          })
+          .catch((err) => {
+            console.error('Error generating PDF:', err);
+            res.status(500).json({ error: 'An error occurred while generating the Word.' });
+          });
+        } else {
+            res.status(400).json({ error: 'Invalid format provided' });
+            return;
+          }
+    
+          res.json({ downloadLink });
       });
 
     // Generate a PDF document based on the given text
