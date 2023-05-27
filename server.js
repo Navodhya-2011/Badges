@@ -54,15 +54,51 @@ const formSchema = new mongoose.Schema({
     });
 
     // Generate a PDF document based on the given text
+// Generate a PDF document based on the given text
 async function generatePDF(text) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage();
 
-  page.drawText(text, { x: 50, y: 50 });
+  const textSize = 12; // Font size for the text
+  const lineHeight = textSize * 1.2; // Line height for the text
+  const margin = 50; // Margin from the top of the page
+
+  // Split the text into paragraphs
+  const paragraphs = text.split('\n');
+
+  // Calculate the starting position for the text
+  let y = page.getHeight() - margin;
+
+  // Draw each paragraph on the page
+  for (const paragraph of paragraphs) {
+    // Split the paragraph into words
+    const words = paragraph.split(' ');
+
+    let line = words[0];
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = page.getWidthOfText(line + ' ' + word, { fontSize: textSize });
+
+      if (width < page.getWidth() - 2 * margin) {
+        // Add the word to the current line
+        line += ' ' + word;
+      } else {
+        // Draw the current line and move to the next line
+        page.drawText(line, { x: margin, y, size: textSize });
+        y -= lineHeight;
+        line = word;
+      }
+    }
+
+    // Draw the last line of the paragraph
+    page.drawText(line, { x: margin, y, size: textSize });
+    y -= lineHeight;
+  }
 
   const pdfBytes = await pdfDoc.save();
   return pdfBytes;
 }
+
     
     // API endpoint to generate and return a download link
 app.post('/api/generate-pdf', (req, res) => {
