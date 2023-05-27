@@ -53,93 +53,103 @@ const formSchema = new mongoose.Schema({
         });
     });
 
-    // API endpoint to generate and return a download link
-    app.post('/api/generate-pdf', (req, res) => {
-        const { education, format } = req.body;
-
-        let downloadLink;
-      if (format === 'PDF') {
-        // Generate the PDF using the provided education data
-        generatePDF(education)
-          .then((pdfBytes) => {
-            const fileName = 'document.pdf';
-            const filePath = path.join(__dirname, fileName);
-      
-            // Write the PDF bytes to a file
-            fs.writeFile(filePath, pdfBytes, (err) => {
-              if (err) {
-                console.error('Error writing PDF file:', err);
-                res.status(500).json({ error: 'An error occurred while generating the PDF.' });
-              } else {
-                console.log('PDF file created:', fileName);
-      
-                // Send the download link back to the frontend
-                const downloadLink = `http://localhost:3001/api/download.pdf?fileName=${fileName}`;
-                res.json({ downloadLink });
-              }
-            });
-          })
-          .catch((err) => {
-            console.error('Error generating PDF:', err);
-            res.status(500).json({ error: 'An error occurred while generating the PDF.' });
-          });
-        }
-        else if (format === 'Word'){
-            generatePDF(education)
-          .then((pdfBytes) => {
-            const fileName = 'document.docx';
-            const filePath = path.join(__dirname, fileName);
-      
-            // Write the PDF bytes to a file
-            fs.writeFile(filePath, pdfBytes, (err) => {
-              if (err) {
-                console.error('Error writing Word file:', err);
-                res.status(500).json({ error: 'An error occurred while generating the Word.' });
-              } else {
-                console.log('Word file created:', fileName);
-      
-                // Send the download link back to the frontend
-                const downloadLink = `http://localhost:3001/api/download.docx?fileName=${fileName}`;
-                res.json({ downloadLink });
-              }
-            });
-          })
-          .catch((err) => {
-            console.error('Error generating PDF:', err);
-            res.status(500).json({ error: 'An error occurred while generating the Word.' });
-          });
-        } else {
-            res.status(400).json({ error: 'Invalid format provided' });
-            return;
-          }
-    
-          res.json({ downloadLink });
-      });
-
     // Generate a PDF document based on the given text
 async function generatePDF(text) {
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage();
-  
-    page.drawText(text, { x: 50, y: 50 });
-  
-    const pdfBytes = await pdfDoc.save();
-    return pdfBytes;
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage();
+
+  page.drawText(text, { x: 50, y: 50 });
+
+  const pdfBytes = await pdfDoc.save();
+  return pdfBytes;
+}
+    
+    // API endpoint to generate and return a download link
+app.post('/api/generate-pdf', (req, res) => {
+  const { education, format } = req.body;
+
+  if (format === 'PDF') {
+    // Generate the PDF using the provided education data
+    generatePDF(education)
+      .then((pdfBytes) => {
+        const fileName = 'document.pdf';
+        const filePath = path.join(__dirname, fileName);
+
+        // Write the PDF bytes to a file
+        fs.writeFile(filePath, pdfBytes, (err) => {
+          if (err) {
+            console.error('Error writing PDF file:', err);
+            res.status(500).json({ error: 'An error occurred while generating the PDF.' });
+          } else {
+            console.log('PDF file created:', fileName);
+
+            // Send the download link back to the frontend
+            const downloadLink = `http://localhost:3001/api/download-pdf?fileName=${fileName}`;
+            res.json({ downloadLink });
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('Error generating PDF:', err);
+        res.status(500).json({ error: 'An error occurred while generating the PDF.' });
+      });
+  } else if (format === 'Word') {
+    generatePDF(education)
+      .then((pdfBytes) => {
+        const fileName = 'document.docx';
+        const filePath = path.join(__dirname, fileName);
+
+        // Write the PDF bytes to a file
+        fs.writeFile(filePath, pdfBytes, (err) => {
+          if (err) {
+            console.error('Error writing Word file:', err);
+            res.status(500).json({ error: 'An error occurred while generating the Word.' });
+          } else {
+            console.log('Word file created:', fileName);
+
+            // Send the download link back to the frontend
+            const downloadLink = `http://localhost:3001/api/download-word?fileName=${fileName}`;
+            res.json({ downloadLink });
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('Error generating PDF:', err);
+        res.status(500).json({ error: 'An error occurred while generating the Word.' });
+      });
+  } else {
+    res.status(400).json({ error: 'Invalid format provided' });
+    return;
   }
-  
-  // API endpoint to download the generated PDF
-  app.get('/api/download-pdf', (req, res) => {
-    const fileName = req.query.fileName;
-    const filePath = path.join(__dirname, fileName);
-  
-    // Set the response headers for file download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-  
-    // Stream the file to the response
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-  });
+});
+
+// API endpoint to download the generated PDF
+app.get('/api/download-pdf', (req, res) => {
+  const fileName = req.query.fileName;
+  const filePath = path.join(__dirname, fileName);
+
+  // Set the response headers for file download
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+  // Stream the file to the response
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+});
+
+// API endpoint to download the generated Word document
+app.get('/api/download-word', (req, res) => {
+  const fileName = req.query.fileName;
+  const filePath = path.join(__dirname, fileName);
+
+  // Set the response headers for file download
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+  // Stream the file to the response
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+});
 
     // Start the server
     app.listen(port, () => {

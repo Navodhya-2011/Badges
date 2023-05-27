@@ -45,10 +45,7 @@ const TestingAPIForm = () => {
       });
   }
 
-  axios.post('http://localhost:3001/api/generate-pdf', {
-    education,
-  })
-
+  
   
 
   const handleSubmitDownload = (event) => {
